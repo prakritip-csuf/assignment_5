@@ -63,16 +63,16 @@ void ForwardEuler::takeStep(ParticleSystem* particleSystem, float stepSize) {
     // Get the current particle system state and have the particles in the state
     // take a step of size h using Forward Euler method 
 
+    std::vector<glm::vec3> currentState = particleSystem->getState();
+    std::vector<glm::vec3> fx = particleSystem->evalF(currentState);
 
+    std::vector<glm::vec3> newState;
+    for (size_t i = 0; i < currentState.size(); ++i) {
 
+        newState.push_back(currentState[i] + fx[i] * stepSize);
+    }
 
-
-
-
-
-
-
-
+    particleSystem->setState(newState);
 
 
     // Call updateParticles() 
