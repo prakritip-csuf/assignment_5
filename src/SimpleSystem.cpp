@@ -3,27 +3,30 @@
 #include <iostream>
 
 SimpleSystem::SimpleSystem(float x, float y, float z, float scale, int colorIndex, int id)
-    : ParticleSystem(x, y, z, scale, colorIndex, id) {
+        : ParticleSystem(x, y, z, scale, colorIndex, id) {
 
-    shapeType = "Simple System";
+        shapeType = "Simple System";
 
-    // TODO: Set up the initial state
+        // TODO: Set up the initial state
+        
+        //inherited directly from ParticleSystem
+        
+
+        m_state.push_back(glm::vec3(0.0f, 0.0f, 0.0f));  //pos1
+        m_state.push_back(glm::vec3(0.0f, 0.0f, 0.0f));  //vec1
+        m_state.push_back(glm::vec3(0.0f, 0.0f, 0.0f));   
+        m_state.push_back(glm::vec3(0.0f, 0.0f, 0.0f));
+            
+
+        m_initialState = m_state;
+        m_numParticles = 2;
 
 
+        generateUnitSphereMesh(0.025f, 8, 8);
 
 
-
-
-
-
-
-
-
-
-
-
-    setupParticles();
-}
+        setupParticles();
+    }
 
 SimpleSystem::~SimpleSystem() {
     if (VAO) glDeleteVertexArrays(1, &VAO);
@@ -148,18 +151,16 @@ std::vector<glm::vec3> SimpleSystem::evalF(const std::vector<glm::vec3>& state) 
     // TODO: implement evalF
     // for a given state, evaluate f(X,t). Return the new state.
 
+    for (int i = 0; i < m_numParticles; ++i) {
+        glm::vec3 pos = state[2 * i];
+        glm::vec3 vel = state[2 * i + 1];
 
+        glm::vec3 dPos = glm::vec3(-pos.y, pos.x, 0.0f);
+        glm::vec3 dVel = glm::vec3( -vel.y, vel.x, 0.0f);
 
-
-
-
-
-
-
-
-
-
-
+        f.push_back(dPos);
+        f.push_back(dVel);
+    }
 
 
     return f;

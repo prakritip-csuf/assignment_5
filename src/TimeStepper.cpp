@@ -95,7 +95,7 @@ void Trapezoidal::takeStep(ParticleSystem* particleSystem, float stepSize) {
 
 
 
-
+    //run evalf twice, 
 
 
 
