@@ -109,27 +109,38 @@ void PendulumSystem::setupParticles(const std::vector<glm::vec4>& myParticles,
     // populate it back to m_state. Build your buffers in particleVertices and 
     // particleIndices
 
+    for (unsigned int i = 0; i < particles.size(); ++i) {
+        m_state.push_back(glm::vec3(particles[i]));
+        m_state.push_back(glm::vec3(0.0f, 0.0f, 0.0f));
+    }
 
+    m_initialState = m_state;
 
+    int vertexOffset = 0;
 
+    for (int p = 0; p < m_numParticles; ++p) {
+      
+        glm::vec3 center = m_state[2 * p]; 
+        
+        for (unsigned int i = 0; i < unitSphereVertices.size(); ++i) {
+            
+            glm::vec3 pos = unitSphereVertices[i] + center;
+            glm::vec3 normal = unitSphereNormals[i];
 
+            particleVertices.insert(particleVertices.end(), { pos.x, pos.y, pos.z });
+            particleVertices.insert(particleVertices.end(), { normal.x, normal.y, normal.z });
+            
 
+        }
 
+        for (unsigned int j = 0; j < unitSphereIndices.size(); ++j) {
+            particleIndices.push_back(static_cast<unsigned int>(vertexOffset+ unitSphereIndices[j]));
+        }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        vertexOffset += unitSphereVertices.size();
+    
+            
+    }
     
     // Build the buffers for the particles
 
@@ -167,23 +178,21 @@ void PendulumSystem::setupSprings() {
     // build your buffers in springVertices. This helps to draw all spring structures between 
     // particles
     
+    for ( const auto& spring : springs) {
+        
+        int index1 = static_cast<int>(spring[0]);
+        int index2 = static_cast<int>(spring[1]);
+
+        glm::vec3 p0 = m_state[2 * index1]; // particle positions
+        glm::vec3 p1 = m_state[2 * index2];
+
+        springVertices.insert(springVertices.end(), { p0.x, p0.y, p0.z });
+        springVertices.insert(springVertices.end(), { p1.x, p1.y, p1.z });
+
+
+    }
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
     
     // Build the buffers for the springs
     
@@ -338,19 +347,23 @@ void PendulumSystem::updateParticles() {
     // particleIndices
 
 
+    for (int p = 0; p < m_numParticles; ++p) {
+      
+        glm::vec3 center = m_state[2 * p]; 
+        
+        for (unsigned int i = 0; i < unitSphereVertices.size(); ++i) {
+            
+            glm::vec3 pos = unitSphereVertices[i] + center;
+            glm::vec3 normal = unitSphereNormals[i];
 
+            particleVertices.insert(particleVertices.end(), { pos.x, pos.y, pos.z });
+            particleVertices.insert(particleVertices.end(), { normal.x, normal.y, normal.z });
+            
 
-
-
-
-
-
-
-
-
-
-
-
+        }
+    
+            
+    }
 
 
     // Update VBO
@@ -370,22 +383,19 @@ void PendulumSystem::updateSprings() {
     // build your buffers in springVertices. This helps to draw all spring structures between 
     // particles
 
+    for ( const auto& spring : springs) {
+        
+        int index1 = static_cast<int>(spring[0]);
+        int index2 = static_cast<int>(spring[1]);
+
+        glm::vec3 p0 = m_state[2 * index1]; // particle positions
+        glm::vec3 p1 = m_state[2 * index2];
+
+        springVertices.insert(springVertices.end(), { p0.x, p0.y, p0.z });
+        springVertices.insert(springVertices.end(), { p1.x, p1.y, p1.z });
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    }
 
 
 
