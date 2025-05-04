@@ -502,29 +502,55 @@ std::vector<glm::vec3> PendulumSystem::evalF(const std::vector<glm::vec3>& state
     // for a given state, evaluate f(X,t). Make sure this works for simplePendulum, simpleChain
     // and simpleCloth
 
+        for (unsigned int i = 0; i < m_numParticles; i++) {
+            
+            glm::vec3 pos = state[2 * i];
+            glm::vec3 vel = state[2 * i + 1];
 
+            f.push_back(vel);
 
+            // Gravity Force
+            glm::vec3 f_Gravity = glm::vec3(0.0f, m_gravity * m_mass, 0.0f);
 
+            // Drag Force
+            glm::vec3 f_Drag = -m_drag * vel;
 
+            // Net Force
+            glm::vec3 f_Net = f_Gravity + f_Drag;
 
+            // Spring Force
+            
+            for ( const auto& spring : springs) {
 
+                int index0 = static_cast<int>(spring[0]);
+                int index1 = static_cast<int>(spring[1]);
 
+                if (index0 == i || index1 == i) {
 
+                glm::vec3 p0 = state[2 * index0]; // particle positions
+                glm::vec3 p1 = state[2 * index1];
 
+                float restLength = spring[2];
+                float stiffness = spring[3];
 
+                glm::vec3 direction = p1 - p0;
+                float currentLength = glm::length(direction);
 
+                if (currentLength > 0){
+                    glm::vec3 springForce = -stiffness * (currentLength - restLength) * glm::normalize(direction);
+                    if (index0 == i) f_Net -= springForce;   // if wrong swap + and -
+                    if (index1 == i) f_Net += springForce;
+                }
+             }
 
-
-
-
-
-
-
-
-
-
-
-
+                if (particles[i].w == 1.0f) {
+                    f.push_back(vel);
+                }
+                else{
+                    f.push_back(f_Net / m_mass);
+                }
+            }
+        }
 
 
     return f;

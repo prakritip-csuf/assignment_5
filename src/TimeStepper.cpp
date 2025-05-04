@@ -92,19 +92,26 @@ void Trapezoidal::takeStep(ParticleSystem* particleSystem, float stepSize) {
     // Get the current particle system state and have the particles in the state
     // take a step of size h using Trapezoid method 
 
+    std::vector<glm::vec3> currentState = particleSystem->getState();
+    
+    std::vector<glm::vec3> f0 = particleSystem->evalF(currentState);
 
+    std::vector<glm::vec3> intermediateState;
+    for (size_t i = 0; i < currentState.size(); ++i) {
+        intermediateState.push_back(currentState[i] + stepSize * f0[i]);
+    }
 
+    std::vector<glm::vec3> f1 = particleSystem->evalF(intermediateState);
+
+    std::vector<glm::vec3> newState;
+    for (size_t i = 0; i < currentState.size(); ++i) {
+        newState.push_back(currentState[i] + (stepSize / 2.0f) * (f0[i] + f1[i]));
+    }
 
     //run evalf twice, 
 
-
-
-
-
-
-
-
-
+    // Update the system state
+    particleSystem->setState(newState);
 
     // Call updateParticles() 
     particleSystem->updateParticles();
@@ -115,21 +122,34 @@ void Trapezoidal::takeStep(ParticleSystem* particleSystem, float stepSize) {
 void Midpoint::takeStep(ParticleSystem* particleSystem, float stepSize) {
 
     // Extra Credit: Midpoint Method
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    
+    // k1 = f(X, t)
+    // k2 = f(X + h/2 * k1, t+h/2)
+    // X(t+h) = X + h * k2
+    
+    // Get the current state
+    std::vector<glm::vec3> currentState = particleSystem->getState();
+    
+    // Calculate k1 = f(X, t)
+    std::vector<glm::vec3> k1 = particleSystem->evalF(currentState);
+    
+    // Calculate intermediate state X + h/2 * k1
+    std::vector<glm::vec3> intermediateState;
+    for (size_t i = 0; i < currentState.size(); ++i) {
+        intermediateState.push_back(currentState[i] + (stepSize / 2.0f) * k1[i]);
+    }
+    
+    // Calculate k2 = f(X + h/2 * k1, t+h/2)
+    std::vector<glm::vec3> k2 = particleSystem->evalF(intermediateState);
+    
+    // Calculate final state X(t+h) = X + h * k2
+    std::vector<glm::vec3> newState;
+    for (size_t i = 0; i < currentState.size(); ++i) {
+        newState.push_back(currentState[i] + stepSize * k2[i]);
+    }
+    
+    // Update the system state
+    particleSystem->setState(newState);
 
     // Call updateParticles() 
     particleSystem->updateParticles();
