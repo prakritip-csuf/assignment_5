@@ -12,10 +12,11 @@ SimplePendulum::SimplePendulum(float x, float y, float z, float scale, int color
 
     wireframe_ON = true;
     structSprings_ON = true;
-    bool particles_ON = true;
+    particles_ON = true;
     
     particles.push_back(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
     particles.push_back(glm::vec4(1.0f, 2.0f, 0.0f, 0.0f));
+
 
     m_numParticles = 2;
 
@@ -24,6 +25,11 @@ SimplePendulum::SimplePendulum(float x, float y, float z, float scale, int color
 
 
     setupParticles(particles, springs, faces);
+
+    m_state.push_back(glm::vec3(0.0f, 0.0f, 0.0f));  // anchor position
+    m_state.push_back(glm::vec3(1.0f, 2.0f, 0.0f));  // bob position
+    m_state.push_back(glm::vec3(0.0f, 0.0f, 0.0f));  // anchor velocity
+    m_state.push_back(glm::vec3(0.0f, 0.0f, 0.0f));  // bob velocity
     
 }
 

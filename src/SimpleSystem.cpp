@@ -14,7 +14,7 @@ SimpleSystem::SimpleSystem(float x, float y, float z, float scale, int colorInde
 
         m_state.push_back(glm::vec3(0.0f, 0.0f, 0.0f));  //pos1
         m_state.push_back(glm::vec3(0.0f, 0.0f, 0.0f));  //vec1
-        m_state.push_back(glm::vec3(0.0f, 0.0f, 0.0f));   
+        m_state.push_back(glm::vec3(0.5f, 0.0f, 0.0f));   
         m_state.push_back(glm::vec3(0.0f, 0.0f, 0.0f));
             
 
