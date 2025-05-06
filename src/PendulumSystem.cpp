@@ -226,34 +226,46 @@ void PendulumSystem::setupSprings() {
 void PendulumSystem::setupWireframe() {
     wireVertices.clear();
 
-    // TODO: Build your initial spring pairs positions for your pendulum system wireframe and 
-    // build your buffers in wireVertices. This helps to draw spring structures between 
-    // particles. The wireframe are only the structural springs that are horizontally and vertically
-    // linking particles. This is only used in SimpleCloth
+    // TODO: Build your initial spring pairs positions for your pendulum system wireframe and build your buffers in wireVertices. This helps to draw spring structures between 
+    // particles. The wireframe are only the structural springs that are horizontally and vertically linking particles. This is only used in SimpleCloth
+
+    int clothSize = static_cast<int>(sqrt(m_numParticles));
+
+    // Helper function for indexing
+    auto indexOf = [clothSize](int row, int col) {
+        return row * clothSize + col;
+    };
 
 
+    for (int row = 0; row < clothSize - 1; ++row) {
+        for (int col = 0; col < clothSize - 1; ++col) {
+            int a = indexOf(row, col);
+            int b = indexOf(row, col + 1);
+            int c = indexOf(row + 1, col);
+            int d = indexOf(row + 1, col + 1);
 
+            glm::vec3 posA = m_state[2 * a];
+            glm::vec3 posB = m_state[2 * b];
+            glm::vec3 posC = m_state[2 * c];
+            glm::vec3 posD = m_state[2 * d];
 
+            // line a-b
+            wireVertices.insert(wireVertices.end(), { posA.x, posA.y, posA.z });
+            wireVertices.insert(wireVertices.end(), { posB.x, posB.y, posB.z });
 
+            // line b-d
+            wireVertices.insert(wireVertices.end(), { posB.x, posB.y, posB.z });
+            wireVertices.insert(wireVertices.end(), { posD.x, posD.y, posD.z });
 
+            // line d-c
+            wireVertices.insert(wireVertices.end(), { posD.x, posD.y, posD.z });
+            wireVertices.insert(wireVertices.end(), { posC.x, posC.y, posC.z });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+            // line c-a
+            wireVertices.insert(wireVertices.end(), { posC.x, posC.y, posC.z });
+            wireVertices.insert(wireVertices.end(), { posA.x, posA.y, posA.z });
+        }
+    }
 
     // Generate VAO and VBO if not already created
     glGenVertexArrays(1, &wireVAO);
@@ -289,27 +301,41 @@ void PendulumSystem::setupFaces() {
     // This creates the triangles and creates the  surface of the cloth. For now, depending on your initial position of 
     // the cloth, just use an axis-aligned normal vector for the normal. This is only used in SimpleCloth
 
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+    int clothSize = static_cast<int>(sqrt(m_numParticles));
 
-    
-    
-    
-    
+    auto indexOf = [clothSize](int row, int col) {
+        return row * clothSize + col;
+    };
 
+    glm::vec3 normal(0.0f, 1.0f, 0.0f); 
+
+    // Build faceVertices
+    for (int row = 0; row < clothSize; ++row) {
+        for (int col = 0; col < clothSize; ++col) {
+            int idx = indexOf(row, col);
+            glm::vec3 pos = m_state[2 * idx];  
+            faceVertices.insert(faceVertices.end(), { pos.x, pos.y, pos.z });
+            faceVertices.insert(faceVertices.end(), { normal.x, normal.y, normal.z });
+        }
+    }
+    
+    for (int row = 0; row < clothSize - 1; ++row) {
+        for (int col = 0; col < clothSize - 1; ++col) {
+            int a = indexOf(row, col);
+            int b = indexOf(row, col + 1);
+            int c = indexOf(row + 1, col);
+            int d = indexOf(row + 1, col + 1);
+
+            faceIndices.push_back(a);
+            faceIndices.push_back(c);
+            faceIndices.push_back(b);
+
+            faceIndices.push_back(b);
+            faceIndices.push_back(c);
+            faceIndices.push_back(d);
+        }
+    }
+    
     // Build the buffers for the particles
 
     glGenVertexArrays(1, &faceVAO);
@@ -341,8 +367,7 @@ void PendulumSystem::updateParticles() {
     particleVertices.clear(); // Reset
 
     // TODO: Build your updates to your particles postion and velocities for your 
-    // pendulum system. Update your buffers in particleVertices and 
-    // particleIndices
+    // pendulum system. Update your buffers in particleVertices and particleIndices
 
 
     for (int p = 0; p < m_numParticles; ++p) {
@@ -356,11 +381,8 @@ void PendulumSystem::updateParticles() {
 
             particleVertices.insert(particleVertices.end(), { pos.x, pos.y, pos.z });
             particleVertices.insert(particleVertices.end(), { normal.x, normal.y, normal.z });
-            
 
-        }
-    
-            
+        } 
     }
 
 
@@ -395,8 +417,6 @@ void PendulumSystem::updateSprings() {
 
     }
 
-
-
     // Update VBO
     
     glBindBuffer(GL_ARRAY_BUFFER, springVBO);
@@ -409,30 +429,44 @@ void PendulumSystem::updateWireframe() {
     wireVertices.clear();
 
 
-    // TODO: Build your updated spring pairs positions for your pendulum system wireframe and 
-    // build your buffers in wireVertices. This helps to draw spring structures between 
-    // particles. The wireframe are only the structural springs that are horizontally and vertically
-    // linking particles. This is only used in SimpleCloth
+    // TODO: Build your updated spring pairs positions for your pendulum system wireframe and build your buffers in wireVertices. This helps to draw spring structures between 
+    // particles. The wireframe are only the structural springs that are horizontally and vertically linking particles. This is only used in SimpleCloth
     
+    int clothSize = static_cast<int>(sqrt(m_numParticles));
 
+    auto indexOf = [clothSize](int row, int col) {
+        return row * clothSize + col;
+    };
 
+    for (int row = 0; row < clothSize - 1; ++row) {
+        for (int col = 0; col < clothSize - 1; ++col) {
+            int a = indexOf(row, col);
+            int b = indexOf(row, col + 1);
+            int c = indexOf(row + 1, col);
+            int d = indexOf(row + 1, col + 1);
 
+            glm::vec3 posA = m_state[2 * a];
+            glm::vec3 posB = m_state[2 * b];
+            glm::vec3 posC = m_state[2 * c];
+            glm::vec3 posD = m_state[2 * d];
 
+            // line a-b
+            wireVertices.insert(wireVertices.end(), { posA.x, posA.y, posA.z });
+            wireVertices.insert(wireVertices.end(), { posB.x, posB.y, posB.z });
 
+            // line b-d
+            wireVertices.insert(wireVertices.end(), { posB.x, posB.y, posB.z });
+            wireVertices.insert(wireVertices.end(), { posD.x, posD.y, posD.z });
 
+            // line d-c
+            wireVertices.insert(wireVertices.end(), { posD.x, posD.y, posD.z });
+            wireVertices.insert(wireVertices.end(), { posC.x, posC.y, posC.z });
 
-
-
-
-
-
-
-
-
-
-
-
-
+            // line c-a
+            wireVertices.insert(wireVertices.end(), { posC.x, posC.y, posC.z });
+            wireVertices.insert(wireVertices.end(), { posA.x, posA.y, posA.z });
+        }
+    }
 
     // Update VBO
     
@@ -440,9 +474,6 @@ void PendulumSystem::updateWireframe() {
     glBufferData(GL_ARRAY_BUFFER, wireVertices.size() * sizeof(float), wireVertices.data(), GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
-
-
-
 
 
 void PendulumSystem::updateFaces() {
@@ -455,39 +486,31 @@ void PendulumSystem::updateFaces() {
     //
     // Here you would need to calculate normals. Since our shader uses a per-vertex normal input, you would need to look
     // at all adjacent faces to a vertex, calculate the faces normals, and accumulate that by summing their vectors. At 
-    // the end, this creates very smooth surface through interpolation.    
+    // the end, this creates very smooth surface through interpolation. 
 
 
+    int clothSize = static_cast<int>(sqrt(m_numParticles));
 
+    auto indexOf = [clothSize](int row, int col) {
+        return row * clothSize + col;
+    };
 
+    glm::vec3 normal(0.0f, 1.0f, 0.0f);  // same normal for now
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    for (int row = 0; row < clothSize; ++row) {
+        for (int col = 0; col < clothSize; ++col) {
+            int idx = indexOf(row, col);
+            glm::vec3 pos = m_state[2 * idx];  // current position
+            faceVertices.insert(faceVertices.end(), { pos.x, pos.y, pos.z });
+            faceVertices.insert(faceVertices.end(), { normal.x, normal.y, normal.z });
+        }
+    }
     // Update VBO
     
     glBindBuffer(GL_ARRAY_BUFFER, faceVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * faceVertices.size(), faceVertices.data(), GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
-
-
-
 
 // TODO: implement evalF
 // for a given state, evaluate f(X,t)
@@ -622,6 +645,7 @@ void PendulumSystem::reset() {
     updateFaces();
 }
 
+
 void PendulumSystem::draw(GLuint shaderProgram) {
 
     updateSprings();
@@ -660,7 +684,6 @@ void PendulumSystem::draw(GLuint shaderProgram) {
         glBindVertexArray(0);
             
     }
-    
 
     // Wireframe
 

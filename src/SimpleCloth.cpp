@@ -20,13 +20,15 @@ SimpleCloth::SimpleCloth(float x, float y, float z, float scale, int colorIndex,
         return row * clothSize + col;
     };
 
+    float spacing = 0.4f;
+
     
     // BUILD YOUR PARTICLE SYSTEM 
     for (int row = 0; row < clothSize; ++row) {
         for (int col = 0; col < clothSize; ++col) {
 
 
-            particles.push_back(glm::vec4(col, 0.0f, row, 0.0f));
+            particles.push_back(glm::vec4(col * spacing, 0.0f, row * spacing, 0.0f));
 
         }   
         
@@ -38,11 +40,11 @@ SimpleCloth::SimpleCloth(float x, float y, float z, float scale, int colorIndex,
             int current = indexOf(row, col);
             if (col < clothSize - 1) {
                 int right = indexOf(row, col + 1);
-                springs.push_back(glm::vec4(current, right, 1.0f, 50.0f));
+                springs.push_back(glm::vec4(current, right, spacing, 20.0f));
             }
             if (row < clothSize - 1) {
                 int below = indexOf(row + 1, col);
-                springs.push_back(glm::vec4(current, below, 1.0f, 50.0f));
+                springs.push_back(glm::vec4(current, below, spacing, 20.0f));
             }
         }
     }
@@ -53,12 +55,12 @@ SimpleCloth::SimpleCloth(float x, float y, float z, float scale, int colorIndex,
             if (col < clothSize - 1) {
                 int current = indexOf(row, col);
                 int diagRight = indexOf(row + 1, col + 1);
-                springs.push_back(glm::vec4(current, diagRight, sqrt(2.0f), 50.0f));
+                springs.push_back(glm::vec4(current, diagRight, sqrt(2.0f) * spacing, 20.0f));
             }
             if (col > 0) {
                 int current = indexOf(row, col);
                 int diagLeft = indexOf(row + 1, col - 1);
-                springs.push_back(glm::vec4(current, diagLeft, sqrt(2.0f), 50.0f));
+                springs.push_back(glm::vec4(current, diagLeft, sqrt(2.0f) * spacing, 20.0f));
             }
         }
     }
@@ -69,12 +71,12 @@ SimpleCloth::SimpleCloth(float x, float y, float z, float scale, int colorIndex,
             if (col < clothSize - 2) {
                 int current = indexOf(row, col);
                 int skipRight = indexOf(row, col + 2);
-                springs.push_back(glm::vec4(current, skipRight, 2.0f, 50.0f));
+                springs.push_back(glm::vec4(current, skipRight, 2.0f * spacing, 20.0f));
             }
             if (row < clothSize - 2) {
                 int current = indexOf(row, col);
                 int skipBelow = indexOf(row + 2, col);
-                springs.push_back(glm::vec4(current, skipBelow, 2.0f, 50.0f));
+                springs.push_back(glm::vec4(current, skipBelow, 2.0f * spacing, 20.0f));
             }
         }
     }
