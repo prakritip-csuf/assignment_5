@@ -192,8 +192,6 @@ void PendulumSystem::setupSprings() {
 
     }
     
-
-    
     // Build the buffers for the springs
     
     
@@ -542,7 +540,7 @@ std::vector<glm::vec3> PendulumSystem::evalF(const std::vector<glm::vec3>& state
                     if (index1 == i) f_Net += springForce;
                 }
              }
-
+            }
                 if (particles[i].w == 1.0f) {
                     f.push_back(vel);
                 }
@@ -550,12 +548,11 @@ std::vector<glm::vec3> PendulumSystem::evalF(const std::vector<glm::vec3>& state
                     f.push_back(f_Net / m_mass);
                 }
             }
-        }
-
+        
 
     return f;
-}
 
+    }
 
 // NOTE: The following flags are available to integrate into your code. Feel free to use them, as they are tied into the Imgui interface.
 // We recommend you take a look at the interface so you can see what is available to you for each particle system.
