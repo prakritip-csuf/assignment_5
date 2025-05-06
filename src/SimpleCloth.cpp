@@ -14,6 +14,8 @@ SimpleCloth::SimpleCloth(float x, float y, float z, float scale, int colorIndex,
     wireframe_ON = false;
     faces_ON = true;
     isCloth = true;
+    windEnabled = false;
+    windIntensity = 1.0f;
 
     // helper function for indexing
     auto indexOf = [clothSize](int row, int col) {

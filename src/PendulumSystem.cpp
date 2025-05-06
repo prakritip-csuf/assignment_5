@@ -564,6 +564,28 @@ std::vector<glm::vec3> PendulumSystem::evalF(const std::vector<glm::vec3>& state
                 }
              }
             }
+
+            // Wind force (if wind is enabled and is cloth system)
+                if (isCloth && getWind()) {
+                f_Net += getWindDirection() * getWindIntensity();
+                }
+
+            // movement force
+            if (isCloth && getMovement()) {
+                float angularSpeed = 0.5f; 
+                float time = glfwGetTime();
+            
+                glm::vec3 center = glm::vec3(0.0f, 0.0f, 0.0f);
+                glm::vec3 offset = pos - center;
+            
+                glm::mat4 rot = glm::rotate(glm::mat4(1.0f), angularSpeed * time, glm::vec3(0.0f, 1.0f, 0.0f));
+                glm::vec3 targetPos = glm::vec3(rot * glm::vec4(offset, 1.0f)) + center;
+            
+                glm::vec3 movementForce = (targetPos - pos) * 10.0f; 
+                f_Net += movementForce;
+            }
+
+
                 if (particles[i].w == 1.0f) {
                     f.push_back(vel);
                 }
