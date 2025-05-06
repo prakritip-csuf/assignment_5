@@ -307,7 +307,7 @@ void PendulumSystem::setupFaces() {
         return row * clothSize + col;
     };
 
-    glm::vec3 normal(0.0f, 1.0f, 0.0f); 
+    glm::vec3 normal(0.0f, 0.1f, 0.0f); 
 
     // Build faceVertices
     for (int row = 0; row < clothSize; ++row) {
@@ -326,13 +326,13 @@ void PendulumSystem::setupFaces() {
             int c = indexOf(row + 1, col);
             int d = indexOf(row + 1, col + 1);
 
-            faceIndices.push_back(a);
-            faceIndices.push_back(c);
-            faceIndices.push_back(b);
+            faceIndices.push_back(0);
+            faceIndices.push_back(1);
+            faceIndices.push_back(2);
 
-            faceIndices.push_back(b);
-            faceIndices.push_back(c);
-            faceIndices.push_back(d);
+            faceIndices.push_back(0);
+            faceIndices.push_back(1);
+            faceIndices.push_back(2);
         }
     }
     

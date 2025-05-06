@@ -29,32 +29,22 @@ public:
 
     MatrixStack& getMatrixStack();
 
-    // Part 1: Understanding Hierarchical Modeling
-
-
-    // 1.3. Implement this method to handle changes to your skeleton given
-    // changes in the slider values
     void setJointTransform(int jointIndex, float rX, float rY, float rZ);
 
-    // Part 2: Skeletal Subspace Deformation
-
-    // 2.3. Implement SSD
-
-    // 2.3.1. Implement this method to compute a per-joint transform from
-    // world-space to joint space in the BIND POSE.
     void computeBindWorldToJointTransforms();
-
-    // 2.3.2. Implement this method to compute a per-joint transform from
-    // joint space to world space in the CURRENT POSE.
     void updateCurrentJointToWorldTransforms();
 
 
-private:
+private:   
     std::vector<Joint*> m_joints;
     Joint* m_rootJoint;
     MatrixStack m_matrixStack;
     std::vector<glm::vec3> jointCenters;
     std::vector<std::pair<glm::vec3, glm::vec3>> bonePairs;    
+
+    void bindWorldToJointTransformRecursive(Joint* joint, MatrixStack& myStack);
+    void currentJointToWorldTransformsRecursive(Joint* joint, MatrixStack& myStack);     
+ 
 };
 
 #endif

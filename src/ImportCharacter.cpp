@@ -97,13 +97,73 @@ void ImportCharacter::setupJointBuffer() {
     // build a sphere mesh, and create the buffer VAO, VBO, and  
     // EBO for use.
     // 
-    //
+    
+    if (jointVAO) glDeleteVertexArrays(1, &jointVAO);
+    if (jointVBO) glDeleteBuffers(1, &jointVBO);
+    if (jointEBO) glDeleteBuffers(1, &jointEBO);
 
+    std::vector<glm::vec3> jointVertices;
+    std::vector<glm::vec3> jointNormals;
+    std::vector<glm::uvec3> jointFaces;
 
+    for (const auto& joint : m_skeletalModel.getJoints()) {
+        glm::vec3 center = glm::vec3(joint->getCurrentJointToWorldTransform() * glm::vec4(0,0,0,1));
 
+        unsigned int baseIndex = jointVertices.size();
 
+        std::vector<glm::vec3> localVertices;
+        std::vector<glm::vec3> localNormals;
+        std::vector<glm::uvec3> localFaces;
 
+        generateSphere(0.02f, center, localVertices, localNormals, localFaces);
 
+        jointVertices.insert(jointVertices.end(), localVertices.begin(), localVertices.end());
+        jointNormals.insert(jointNormals.end(), localNormals.begin(), localNormals.end());
+
+        for (auto& f : localFaces) {
+            jointFaces.push_back(glm::uvec3(f.x + baseIndex, f.y + baseIndex, f.z + baseIndex));
+        }
+    }
+
+    jointIndexCount = jointFaces.size() * 3;
+
+    std::vector<float> vertexData;
+    for (size_t i = 0; i < jointVertices.size(); ++i) {
+        vertexData.push_back(jointVertices[i].x);
+        vertexData.push_back(jointVertices[i].y);
+        vertexData.push_back(jointVertices[i].z);
+
+        vertexData.push_back(jointNormals[i].x);
+        vertexData.push_back(jointNormals[i].y);
+        vertexData.push_back(jointNormals[i].z);
+    }
+
+    std::vector<unsigned int> indices;
+    for (auto& f : jointFaces) {
+        indices.push_back(f.x);
+        indices.push_back(f.y);
+        indices.push_back(f.z);
+    }
+
+    glGenVertexArrays(1, &jointVAO);
+    glGenBuffers(1, &jointVBO);
+    glGenBuffers(1, &jointEBO);
+
+    glBindVertexArray(jointVAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, jointVBO);
+    glBufferData(GL_ARRAY_BUFFER, vertexData.size() * sizeof(float), vertexData.data(), GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, jointEBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    glBindVertexArray(0);
 
 }
 
@@ -115,13 +175,78 @@ void ImportCharacter::setupBoneBuffer() {
     // 
     //
     
-    
-    
-    
-    
-    
-    
-    
+    if (boneVAO) glDeleteVertexArrays(1, &boneVAO);
+    if (boneVBO) glDeleteBuffers(1, &boneVBO);
+    if (boneEBO) glDeleteBuffers(1, &boneEBO);
+
+    std::vector<glm::vec3> boneVertices;
+    std::vector<glm::vec3> boneNormals;
+    std::vector<glm::uvec3> boneFaces;
+
+    for (const auto& joint : m_skeletalModel.getJoints()) {
+        glm::vec3 parentPos = glm::vec3(joint->getCurrentJointToWorldTransform() * glm::vec4(0,0,0,1));
+
+        for (const auto& child : joint->getChildren()) {
+            glm::vec3 childPos = glm::vec3(child->getCurrentJointToWorldTransform() * glm::vec4(0,0,0,1));
+
+            unsigned int baseIndex = boneVertices.size();
+
+            std::vector<glm::vec3> localVertices;
+            std::vector<glm::vec3> localNormals;
+            std::vector<glm::uvec3> localFaces;
+
+            generateCuboid(parentPos, childPos, localVertices, localNormals, localFaces);
+
+            boneVertices.insert(boneVertices.end(), localVertices.begin(), localVertices.end());
+            boneNormals.insert(boneNormals.end(), localNormals.begin(), localNormals.end());
+
+            for (auto& f : localFaces) {
+                boneFaces.push_back(glm::uvec3(f.x + baseIndex, f.y + baseIndex, f.z + baseIndex));
+            }
+        }
+    }
+
+    boneIndexCount = boneFaces.size() * 3;
+
+    std::vector<float> vertexData;
+    for (size_t i = 0; i < boneVertices.size(); ++i) {
+        vertexData.push_back(boneVertices[i].x);
+        vertexData.push_back(boneVertices[i].y);
+        vertexData.push_back(boneVertices[i].z);
+
+        vertexData.push_back(boneNormals[i].x);
+        vertexData.push_back(boneNormals[i].y);
+        vertexData.push_back(boneNormals[i].z);
+    }
+
+    // Flatten face indices
+    std::vector<unsigned int> indices;
+    for (auto& f : boneFaces) {
+        indices.push_back(f.x);
+        indices.push_back(f.y);
+        indices.push_back(f.z);
+    }
+
+    glGenVertexArrays(1, &boneVAO);
+    glGenBuffers(1, &boneVBO);
+    glGenBuffers(1, &boneEBO);
+
+    glBindVertexArray(boneVAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, boneVBO);
+    glBufferData(GL_ARRAY_BUFFER, vertexData.size() * sizeof(float), vertexData.data(), GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, boneEBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
+
+    // Position (3 floats) + Normal (3 floats)
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    glBindVertexArray(0);
     
 }
 
@@ -175,17 +300,28 @@ void ImportCharacter::updateMeshVertices() {
     // You will need both the bind pose world --> joint transforms.
     // and the current joint --> world transforms.
 
+    m_skeletalModel.updateCurrentJointToWorldTransforms();
 
+    vertices.clear();
+    vertices.resize(bindVertices.size(), glm::vec3(0.0f));
 
+    for (size_t i = 0; i < bindVertices.size(); ++i) {
+        glm::vec3 newPos(0.0f);
 
+        for (size_t j = 0; j < attachments[i].size(); ++j) {
+            float weight = attachments[i][j];
+            if (weight == 0.0f) continue;
 
+            Joint* joint = m_skeletalModel.getJoints()[j];
+            glm::mat4 T = joint->getCurrentJointToWorldTransform();
+            glm::mat4 B_inv = joint->getBindWorldToJointTransform();
 
+            glm::vec4 transformed = T * B_inv * glm::vec4(bindVertices[i], 1.0f);
+            newPos += weight * glm::vec3(transformed);
+        }
 
-
-
-
-
-
+        vertices[i] = newPos;
+    }
    
     setupMeshBuffer();
     setupJointBuffer();
@@ -195,36 +331,48 @@ void ImportCharacter::updateMeshVertices() {
 
 
 void ImportCharacter::draw(GLuint shaderProgram) {
-
-    updateMeshVertices();
     
-    // Use the shader program
     glUseProgram(shaderProgram);
     
-    // Enable lighting for the cube
+    // Lighting setup
     GLint lightingLoc = glGetUniformLocation(shaderProgram, "useLighting");
-    if (lightingLoc != -1) {
-        glUniform1i(lightingLoc, 1); // Enable lighting for the cube
+    if (lightingLoc != -1) glUniform1i(lightingLoc, 1);
+
+    // Critical fix: Apply transforms AFTER updating vertices
+    if (displayMode == SKELETAL) {
+        updateMeshVertices(); // Update before applying transforms
     }
+    applyTransform(shaderProgram); // Applies to current geometry
 
-    // Apply transformations and pass to the shader
-    applyTransform(shaderProgram);
-
-    // Pass material properties
+    // Material properties
     GLint colorLoc = glGetUniformLocation(shaderProgram, "material.color");
     if (colorLoc != -1) {
         glUniform3fv(colorLoc, 1, (colorIndex == 31) ? customColor : colorPresets[colorIndex].color);
     }
 
-    // Render the character mesh
-    glBindVertexArray(meshVAO);
-    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(faces.size() * 3), GL_UNSIGNED_INT, 0);
-    glBindVertexArray(0);
+    updateMeshVertices();
 
-    // Disable lighting after drawing the cube (for axis rendering)
-    if (lightingLoc != -1) {
-        glUniform1i(lightingLoc, 0);
+    if (displayMode == MESH) {
+        glBindVertexArray(meshVAO);
+        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(faces.size() * 3), GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
+    } 
+    else if (displayMode == SKELETAL) {
+            float white[3] = {1.0f, 1.0f, 1.0f};
+            glUniform3fv(colorLoc, 1, white);
+
+        // Draw joints
+        glBindVertexArray(jointVAO);
+        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(jointIndexCount), GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
+
+        // Draw bones (as cuboids)
+        glBindVertexArray(boneVAO);
+        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(boneIndexCount), GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0); 
     }
+
+    if (lightingLoc != -1) glUniform1i(lightingLoc, 0);
 
 }
 
@@ -246,15 +394,44 @@ void ImportCharacter::generateSphere(float radius, glm::vec3 center,
                                       std::vector<glm::uvec3>& jointFaces) {
                          
 // Extra credit - Helper utility to generate a sphere instead of a point for joints
+    int sectorCount = 16; 
+    int stackCount = 16; 
 
+    for (int i = 0; i <= stackCount; ++i) {
+        float stackAngle = glm::pi<float>() / 2 - i * glm::pi<float>() / stackCount; 
+        float xy = radius * cosf(stackAngle);
+        float z = radius * sinf(stackAngle);
 
+        for (int j = 0; j <= sectorCount; ++j) {
+            float sectorAngle = j * 2 * glm::pi<float>() / sectorCount;
 
+            float x = xy * cosf(sectorAngle);
+            float y = xy * sinf(sectorAngle);
 
+            glm::vec3 pos = glm::vec3(x, y, z) + center;
+            glm::vec3 normal = glm::normalize(glm::vec3(x, y, z));
 
+            jointVertices.push_back(pos);
+            jointNormals.push_back(normal);
+        }
+    }
 
+    
+    for (int i = 0; i < stackCount; ++i) {
+        int k1 = i * (sectorCount + 1);
+        int k2 = k1 + sectorCount + 1;
 
+        for (int j = 0; j < sectorCount; ++j, ++k1, ++k2) {
+            if (i != 0) {
+                jointFaces.push_back(glm::uvec3(k1, k2, k1 + 1));
+            }
+            if (i != (stackCount - 1)) {
+                jointFaces.push_back(glm::uvec3(k1 + 1, k2, k2 + 1));
+            }
+        }
+    }
+    }
 
-}
 
 
 void ImportCharacter::generateCuboid(const glm::vec3& parentPos, const glm::vec3& childPos,
@@ -262,20 +439,53 @@ void ImportCharacter::generateCuboid(const glm::vec3& parentPos, const glm::vec3
                                       std::vector<glm::vec3>& boneNormals,
                                       std::vector<glm::uvec3>& boneFaces) {
 
-// Extra credit - Helper utility to generate a cube or cuboid instead of a line for bones
+    // Extra credit - Helper utility to generate a cube or cuboid instead of a line for bones
+    glm::vec3 z = glm::normalize(childPos - parentPos);
+    float length = glm::length(childPos - parentPos);
 
+   
+    glm::vec3 rnd(0, 0, 1);
+    if (glm::abs(glm::dot(z, rnd)) > 0.99f)
+        rnd = glm::vec3(0, 1, 0); 
 
+    glm::vec3 y = glm::normalize(glm::cross(z, rnd));
+    glm::vec3 x = glm::normalize(glm::cross(y, z));
 
+    glm::mat4 transform(1.0f);
+    transform[0] = glm::vec4(x * 0.01f, 0.0f);
+    transform[1] = glm::vec4(y * 0.01f, 0.0f);
+    transform[2] = glm::vec4(z * length, 0.0f);
+    transform[3] = glm::vec4(parentPos, 1.0f);
 
+    std::vector<glm::vec3> unitCube = {
+        {-0.5f, -0.5f, 0.0f}, {0.5f, -0.5f, 0.0f}, {0.5f, 0.5f, 0.0f}, {-0.5f, 0.5f, 0.0f},
+        {-0.5f, -0.5f, 1.0f}, {0.5f, -0.5f, 1.0f}, {0.5f, 0.5f, 1.0f}, {-0.5f, 0.5f, 1.0f}
+    };
 
+    for (const auto& v : unitCube) {
+        glm::vec4 worldV = transform * glm::vec4(v, 1.0f);
+        boneVertices.push_back(glm::vec3(worldV));
+    }
 
+    std::vector<glm::vec3> cubeNormals = {
+        {0, 0, -1}, {0, 0, -1}, {0, 0, -1}, {0, 0, -1},
+        {0, 0, 1}, {0, 0, 1}, {0, 0, 1}, {0, 0, 1}
+    };
+    for (const auto& n : cubeNormals) {
+        boneNormals.push_back(n);
+    }
 
-
+    std::vector<glm::uvec3> faces = {
+        {0, 1, 2}, {2, 3, 0}, // bottom
+        {4, 5, 6}, {6, 7, 4}, // top
+        {0, 1, 5}, {5, 4, 0}, // side
+        {1, 2, 6}, {6, 5, 1},
+        {2, 3, 7}, {7, 6, 2},
+        {3, 0, 4}, {4, 7, 3}
+    };
+    for (auto f : faces) {
+        boneFaces.push_back(f);
+    }
+    
 
 }
-
-
-
-
-
-
