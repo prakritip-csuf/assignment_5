@@ -242,7 +242,7 @@ void Renderer::renderScene(ShapeManager& shapeManager, TimeStepper* timeStepper)
 				shapeManager.addShape(new SimpleCloth(0.0f, 0.0f, 0.0f, 1.0f, 6, shapeManager.incrementShapeCounter(),
 				2.0f,               // Length of chain
 				0.1f,               // Mass of bobs
-				15					// Dimension of cloth
+				12					// Dimension of cloth
 				)); 			
 				shapeManager.setSelectedShapeByLastAdded();  // Select the last shape added
             }

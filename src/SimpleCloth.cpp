@@ -22,7 +22,7 @@ SimpleCloth::SimpleCloth(float x, float y, float z, float scale, int colorIndex,
         return row * clothSize + col;
     };
 
-    float spacing = 0.4f;
+    float spacing = 0.2f;
 
     
     // BUILD YOUR PARTICLE SYSTEM 
@@ -41,11 +41,11 @@ SimpleCloth::SimpleCloth(float x, float y, float z, float scale, int colorIndex,
             int current = indexOf(row, col);
             if (col < clothSize - 1) {
                 int right = indexOf(row, col + 1);
-                springs.push_back(glm::vec4(current, right, spacing, 20.0f));
+                springs.push_back(glm::vec4(current, right, spacing, 10.0f));
             }
             if (row < clothSize - 1) {
                 int below = indexOf(row + 1, col);
-                springs.push_back(glm::vec4(current, below, spacing, 20.0f));
+                springs.push_back(glm::vec4(current, below, spacing, 10.0f));
             }
         }
     }
@@ -56,12 +56,12 @@ SimpleCloth::SimpleCloth(float x, float y, float z, float scale, int colorIndex,
             if (col < clothSize - 1) {
                 int current = indexOf(row, col);
                 int diagRight = indexOf(row + 1, col + 1);
-                springs.push_back(glm::vec4(current, diagRight, sqrt(2.0f) * spacing, 20.0f));
+                springs.push_back(glm::vec4(current, diagRight, sqrt(2.0f) * spacing, 10.0f));
             }
             if (col > 0) {
                 int current = indexOf(row, col);
                 int diagLeft = indexOf(row + 1, col - 1);
-                springs.push_back(glm::vec4(current, diagLeft, sqrt(2.0f) * spacing, 20.0f));
+                springs.push_back(glm::vec4(current, diagLeft, sqrt(2.0f) * spacing, 10.0f));
             }
         }
     }
@@ -72,12 +72,12 @@ SimpleCloth::SimpleCloth(float x, float y, float z, float scale, int colorIndex,
             if (col < clothSize - 2) {
                 int current = indexOf(row, col);
                 int skipRight = indexOf(row, col + 2);
-                springs.push_back(glm::vec4(current, skipRight, 2.0f * spacing, 20.0f));
+                springs.push_back(glm::vec4(current, skipRight, 2.0f * spacing, 10.0f));
             }
             if (row < clothSize - 2) {
                 int current = indexOf(row, col);
                 int skipBelow = indexOf(row + 2, col);
-                springs.push_back(glm::vec4(current, skipBelow, 2.0f * spacing, 20.0f));
+                springs.push_back(glm::vec4(current, skipBelow, 2.0f * spacing, 10.0f));
             }
         }
     }
@@ -89,37 +89,14 @@ SimpleCloth::SimpleCloth(float x, float y, float z, float scale, int colorIndex,
             int b = indexOf(row, col + 1);
             int c = indexOf(row + 1, col);
             int d = indexOf(row + 1, col + 1);
+            
+            // first triangle (a, c, b)
             faces.push_back(glm::uvec3(a, c, b));
+            
+            // second triangle (b, c, d)
             faces.push_back(glm::uvec3(b, c, d));
         }
     }
-
-      // this is creating springs
-            // structural
-            // check first
-           // row < clothSize -1;
-
-            //check next
-            // col < clothSize -1;
-
-            //shear
-            // check both if your row is 
-
-            // row < clothSize -1 and col < clothSize -1 
-
-            //Flexion
-
-            //check first
-           // row < clothSize -2;
-
-            //check next
-            //col < clothSize -2;
-
-            //diagonal
-
-
-    // you need your faces too
-
 
 
     setupParticles(particles, springs, faces);

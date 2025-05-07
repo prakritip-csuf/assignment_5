@@ -298,63 +298,53 @@ void PendulumSystem::setupFaces() {
     // This creates the triangles and creates the  surface of the cloth. For now, depending on your initial position of 
     // the cloth, just use an axis-aligned normal vector for the normal. This is only used in SimpleCloth
 
-    // Define grid parameters for the cloth
-    int width = 20;   // Number of vertices horizontally
-    int height = 20;  // Number of vertices vertically
-    float spacing = 0.1f; // Space between vertices
-    
-    // Calculate total cloth dimensions
-    float clothWidth = (width - 1) * spacing;
-    float clothHeight = (height - 1) * spacing;
-    
-    // Position the cloth in 3D space
-    float startX = -clothWidth / 2.0f;  // Center horizontally
-    float startY = 0.0f;                // Hang from top
-    float startZ = 0.0f;
-    
-    // Generate vertices
-    for (int j = 0; j < height; j++) {
-        for (int i = 0; i < width; i++) {
-            // Position
-            float xPos = startX + i * spacing;
-            float yPos = startY - j * spacing;  // Hang down from top
-            float zPos = startZ;
-            
-            // Normal (pointing in positive z direction)
-            float nx = 0.0f;
-            float ny = 0.0f;
-            float nz = 1.0f;
-            
-            // Add position and normal to faceVertices
-            faceVertices.push_back(xPos);
-            faceVertices.push_back(yPos);
-            faceVertices.push_back(zPos);
-            faceVertices.push_back(nx);
-            faceVertices.push_back(ny);
-            faceVertices.push_back(nz);
+    if (faceVAO) glDeleteVertexArrays(1, &faceVAO);
+    if (faceVBO) glDeleteBuffers(1, &faceVBO);
+    if (faceEBO) glDeleteBuffers(1, &faceEBO);
+
+    int clothSize = static_cast<int>(sqrt(m_numParticles));
+
+    // Helper to access index
+    auto indexOf = [clothSize](int row, int col) {
+        return row * clothSize + col;
+    };
+
+    // Use fixed up normal (Y axis)
+    glm::vec3 normal(0.0f, 1.0f, 0.0f);
+
+    // Fill faceVertices with positions + simple normals
+    for (int row = 0; row < clothSize; ++row) {
+        for (int col = 0; col < clothSize; ++col) {
+            int idx = indexOf(row, col);
+            glm::vec3 pos = m_state[2 * idx];
+            faceVertices.push_back(pos.x);
+            faceVertices.push_back(pos.y);
+            faceVertices.push_back(pos.z);
+
+            faceVertices.push_back(normal.x);
+            faceVertices.push_back(normal.y);
+            faceVertices.push_back(normal.z);
         }
     }
 
-     // Generate indices for triangular faces
-     for (int j = 0; j < height - 1; j++) {
-        for (int i = 0; i < width - 1; i++) {
-            // Get indices of the four corners of the current grid cell
-            unsigned int topLeft = j * width + i;
-            unsigned int topRight = j * width + i + 1;
-            unsigned int bottomLeft = (j + 1) * width + i;
-            unsigned int bottomRight = (j + 1) * width + i + 1;
-            
-            // First triangle (top-left, bottom-left, bottom-right)
-            faceIndices.push_back(topLeft);
-            faceIndices.push_back(bottomLeft);
-            faceIndices.push_back(bottomRight);
-            
-            // Second triangle (top-left, bottom-right, top-right)
-            faceIndices.push_back(topLeft);
-            faceIndices.push_back(bottomRight);
-            faceIndices.push_back(topRight);
+    // Create triangle indices (two triangles per quad)
+    for (int row = 0; row < clothSize - 1; ++row) {
+        for (int col = 0; col < clothSize - 1; ++col) {
+            int a = indexOf(row, col);
+            int b = indexOf(row, col + 1);
+            int c = indexOf(row + 1, col);
+            int d = indexOf(row + 1, col + 1);
+
+            faceIndices.push_back(a);
+            faceIndices.push_back(c);
+            faceIndices.push_back(b);
+
+            faceIndices.push_back(b);
+            faceIndices.push_back(c);
+            faceIndices.push_back(d);
         }
     }
+
     // Build the buffers for the particles
 
     glGenVertexArrays(1, &faceVAO);
@@ -404,8 +394,6 @@ void PendulumSystem::updateParticles() {
 
         } 
     }
-
-
     // Update VBO
     
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -508,27 +496,63 @@ void PendulumSystem::updateFaces() {
     // at all adjacent faces to a vertex, calculate the faces normals, and accumulate that by summing their vectors. At 
     // the end, this creates very smooth surface through interpolation. 
 
-
     int clothSize = static_cast<int>(sqrt(m_numParticles));
 
+    // Helper to get index in grid
     auto indexOf = [clothSize](int row, int col) {
         return row * clothSize + col;
     };
 
-    glm::vec3 normal(0.0f, 1.0f, 0.0f);  // same normal for now
+    // Get current positions
+    std::vector<glm::vec3> positions(m_numParticles);
+    std::vector<glm::vec3> normals(m_numParticles, glm::vec3(0.0f));
 
-    for (int row = 0; row < clothSize; ++row) {
-        for (int col = 0; col < clothSize; ++col) {
-            int idx = indexOf(row, col);
-            glm::vec3 pos = m_state[2 * idx];  // current position
-            faceVertices.insert(faceVertices.end(), { pos.x, pos.y, pos.z });
-            faceVertices.insert(faceVertices.end(), { normal.x, normal.y, normal.z });
-        }
+    for (int i = 0; i < m_numParticles; ++i) {
+        positions[i] = m_state[2 * i];
     }
-    // Update VBO
-    
+
+    // Calculate face normals and accumulate to vertices
+    for (const auto& face : faces) {
+        int i0 = face.x;
+        int i1 = face.y;
+        int i2 = face.z;
+
+        glm::vec3 v0 = positions[i0];
+        glm::vec3 v1 = positions[i1];
+        glm::vec3 v2 = positions[i2];
+
+        glm::vec3 edge1 = v1 - v0;
+        glm::vec3 edge2 = v2 - v0;
+        glm::vec3 faceNormal = glm::normalize(glm::cross(edge1, edge2));
+
+        normals[i0] += faceNormal;
+        normals[i1] += faceNormal;
+        normals[i2] += faceNormal;
+    }
+
+    // Normalize accumulated normals
+    for (int i = 0; i < m_numParticles; ++i) {
+        normals[i] = glm::normalize(normals[i]);
+    }
+
+    // Fill faceVertices with updated position and smooth normal
+    for (int i = 0; i < m_numParticles; ++i) {
+        glm::vec3 pos = positions[i];
+        glm::vec3 norm = normals[i];
+
+        faceVertices.push_back(pos.x);
+        faceVertices.push_back(pos.y);
+        faceVertices.push_back(pos.z);
+
+        faceVertices.push_back(norm.x);
+        faceVertices.push_back(norm.y);
+        faceVertices.push_back(norm.z);
+    }
+   
+
+    // Update dVBO
     glBindBuffer(GL_ARRAY_BUFFER, faceVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * faceVertices.size(), faceVertices.data(), GL_DYNAMIC_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, faceVertices.size() * sizeof(float), faceVertices.data());
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
@@ -585,35 +609,35 @@ std::vector<glm::vec3> PendulumSystem::evalF(const std::vector<glm::vec3>& state
              }
             }
 
-            // Wind force (if wind is enabled and is cloth system)
-                if (isCloth && getWind()) {
-                f_Net += getWindDirection() * getWindIntensity();
-                }
+            // // Wind force (if wind is enabled and is cloth system)
+            //     if (isCloth && getWind()) {
+            //     f_Net += getWindDirection() * getWindIntensity();
+            //     }
 
             // movement force
-            if (isCloth && getMovement()) {
-                float angularSpeed = 0.5f; 
-                float time = glfwGetTime();
+            // if (isCloth && getMovement()) {
+            //     float waveSpeed = 2.0f;      // speed of wave animation
+            //     float waveHeight = 0.2f;     // maximum vertical displacement
+            //     float waveLength = 1.5f;     // horizontal scale of wave
+            //     float time = glfwGetTime();
             
-                glm::vec3 center = glm::vec3(0.0f, 0.0f, 0.0f);
-                glm::vec3 offset = pos - center;
+            //     // Compute phase based on X and Z position
+            //     float phase = (pos.x + pos.z) / waveLength;
             
-                glm::mat4 rot = glm::rotate(glm::mat4(1.0f), angularSpeed * time, glm::vec3(0.0f, 1.0f, 0.0f));
-                glm::vec3 targetPos = glm::vec3(rot * glm::vec4(offset, 1.0f)) + center;
+            //     // Compute target Y position using sine wave
+            //     float targetY = waveHeight * sin(waveSpeed * time + phase);
             
-                glm::vec3 movementForce = (targetPos - pos) * 10.0f; 
-                f_Net += movementForce;
-            }
-
-
-                if (particles[i].w == 1.0f) {
-                    f.push_back(vel);
-                }
-                else{
-                    f.push_back(f_Net / m_mass);
-                }
-            }
-        
+            //     // Compute difference between current Y and target Y
+            //     float diff = targetY - pos.y;
+            
+            //     // Apply vertical force toward the target height
+            //     glm::vec3 waveForce = glm::vec3(0.0f, diff * 5.0f, 0.0f);  // amplify to control stiffness
+            
+            //     if (particles[i].w != 1.0f) {  // skip fixed particles
+            //         f_Net += waveForce;
+            //     }
+            // }
+        }
 
     return f;
 
@@ -692,6 +716,7 @@ void PendulumSystem::draw(GLuint shaderProgram) {
 
     updateSprings();
     updateWireframe();
+    setupFaces();
     updateFaces(); // optional
 
     // Use the shader program
@@ -722,7 +747,7 @@ void PendulumSystem::draw(GLuint shaderProgram) {
         }
         
         glBindVertexArray(faceVAO);
-        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(faceIndices.size()), GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, faces.size() * 6, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
             
     }
