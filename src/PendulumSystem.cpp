@@ -289,9 +289,6 @@ void PendulumSystem::setupWireframe() {
    
 }
 
-
-
-
 void PendulumSystem::setupFaces() {
 
     faceVertices.clear();
@@ -301,41 +298,63 @@ void PendulumSystem::setupFaces() {
     // This creates the triangles and creates the  surface of the cloth. For now, depending on your initial position of 
     // the cloth, just use an axis-aligned normal vector for the normal. This is only used in SimpleCloth
 
-    int clothSize = static_cast<int>(sqrt(m_numParticles));
-
-    auto indexOf = [clothSize](int row, int col) {
-        return row * clothSize + col;
-    };
-
-    glm::vec3 normal(0.0f, 0.1f, 0.0f); 
-
-    // Build faceVertices
-    for (int row = 0; row < clothSize; ++row) {
-        for (int col = 0; col < clothSize; ++col) {
-            int idx = indexOf(row, col);
-            glm::vec3 pos = m_state[2 * idx];  
-            faceVertices.insert(faceVertices.end(), { pos.x, pos.y, pos.z });
-            faceVertices.insert(faceVertices.end(), { normal.x, normal.y, normal.z });
+    // Define grid parameters for the cloth
+    int width = 20;   // Number of vertices horizontally
+    int height = 20;  // Number of vertices vertically
+    float spacing = 0.1f; // Space between vertices
+    
+    // Calculate total cloth dimensions
+    float clothWidth = (width - 1) * spacing;
+    float clothHeight = (height - 1) * spacing;
+    
+    // Position the cloth in 3D space
+    float startX = -clothWidth / 2.0f;  // Center horizontally
+    float startY = 0.0f;                // Hang from top
+    float startZ = 0.0f;
+    
+    // Generate vertices
+    for (int j = 0; j < height; j++) {
+        for (int i = 0; i < width; i++) {
+            // Position
+            float xPos = startX + i * spacing;
+            float yPos = startY - j * spacing;  // Hang down from top
+            float zPos = startZ;
+            
+            // Normal (pointing in positive z direction)
+            float nx = 0.0f;
+            float ny = 0.0f;
+            float nz = 1.0f;
+            
+            // Add position and normal to faceVertices
+            faceVertices.push_back(xPos);
+            faceVertices.push_back(yPos);
+            faceVertices.push_back(zPos);
+            faceVertices.push_back(nx);
+            faceVertices.push_back(ny);
+            faceVertices.push_back(nz);
         }
     }
-    
-    for (int row = 0; row < clothSize - 1; ++row) {
-        for (int col = 0; col < clothSize - 1; ++col) {
-            int a = indexOf(row, col);
-            int b = indexOf(row, col + 1);
-            int c = indexOf(row + 1, col);
-            int d = indexOf(row + 1, col + 1);
 
-            faceIndices.push_back(0);
-            faceIndices.push_back(1);
-            faceIndices.push_back(2);
-
-            faceIndices.push_back(0);
-            faceIndices.push_back(1);
-            faceIndices.push_back(2);
+     // Generate indices for triangular faces
+     for (int j = 0; j < height - 1; j++) {
+        for (int i = 0; i < width - 1; i++) {
+            // Get indices of the four corners of the current grid cell
+            unsigned int topLeft = j * width + i;
+            unsigned int topRight = j * width + i + 1;
+            unsigned int bottomLeft = (j + 1) * width + i;
+            unsigned int bottomRight = (j + 1) * width + i + 1;
+            
+            // First triangle (top-left, bottom-left, bottom-right)
+            faceIndices.push_back(topLeft);
+            faceIndices.push_back(bottomLeft);
+            faceIndices.push_back(bottomRight);
+            
+            // Second triangle (top-left, bottom-right, top-right)
+            faceIndices.push_back(topLeft);
+            faceIndices.push_back(bottomRight);
+            faceIndices.push_back(topRight);
         }
     }
-    
     // Build the buffers for the particles
 
     glGenVertexArrays(1, &faceVAO);
@@ -352,6 +371,7 @@ void PendulumSystem::setupFaces() {
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 

@@ -29,7 +29,6 @@ SimpleCloth::SimpleCloth(float x, float y, float z, float scale, int colorIndex,
     for (int row = 0; row < clothSize; ++row) {
         for (int col = 0; col < clothSize; ++col) {
 
-
             particles.push_back(glm::vec4(col * spacing, 0.0f, row * spacing, 0.0f));
 
         }   
