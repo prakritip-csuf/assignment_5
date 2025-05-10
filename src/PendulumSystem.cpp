@@ -1,4 +1,5 @@
 #include "PendulumSystem.h"
+#include "SimpleCloth.h"
 #include <cmath> // For math functions like sin, cos, sqrt
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
@@ -128,8 +129,7 @@ void PendulumSystem::setupParticles(const std::vector<glm::vec4>& myParticles,
             glm::vec3 normal = unitSphereNormals[i];
 
             particleVertices.insert(particleVertices.end(), { pos.x, pos.y, pos.z });
-            particleVertices.insert(particleVertices.end(), { normal.x, normal.y, normal.z });
-            
+            particleVertices.insert(particleVertices.end(), { normal.x, normal.y, normal.z }); 
 
         }
 
@@ -309,10 +309,8 @@ void PendulumSystem::setupFaces() {
         return row * clothSize + col;
     };
 
-    // Use fixed up normal (Y axis)
     glm::vec3 normal(0.0f, 1.0f, 0.0f);
 
-    // Fill faceVertices with positions + simple normals
     for (int row = 0; row < clothSize; ++row) {
         for (int col = 0; col < clothSize; ++col) {
             int idx = indexOf(row, col);
@@ -327,7 +325,6 @@ void PendulumSystem::setupFaces() {
         }
     }
 
-    // Create triangle indices (two triangles per quad)
     for (int row = 0; row < clothSize - 1; ++row) {
         for (int col = 0; col < clothSize - 1; ++col) {
             int a = indexOf(row, col);
@@ -507,6 +504,12 @@ void PendulumSystem::updateFaces() {
     std::vector<glm::vec3> positions(m_numParticles);
     std::vector<glm::vec3> normals(m_numParticles, glm::vec3(0.0f));
 
+    if (m_state.size() < 2 * m_numParticles) {
+        std::cerr << "m_state size too small! Expected: " << 2 * m_numParticles << ", got: " << m_state.size() << std::endl;
+        return;
+    }
+    
+
     for (int i = 0; i < m_numParticles; ++i) {
         positions[i] = m_state[2 * i];
     }
@@ -548,11 +551,21 @@ void PendulumSystem::updateFaces() {
         faceVertices.push_back(norm.y);
         faceVertices.push_back(norm.z);
     }
-   
 
     // Update dVBO
+   
     glBindBuffer(GL_ARRAY_BUFFER, faceVBO);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, faceVertices.size() * sizeof(float), faceVertices.data());
+
+    GLint currentBufferSize = 0;
+    glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &currentBufferSize);
+    GLsizeiptr requiredSize = faceVertices.size() * sizeof(float);
+
+    if (requiredSize > currentBufferSize) {
+        glBufferData(GL_ARRAY_BUFFER, requiredSize, faceVertices.data(), GL_DYNAMIC_DRAW);
+    } else {
+        glBufferSubData(GL_ARRAY_BUFFER, 0, requiredSize, faceVertices.data());
+    }
+    
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
@@ -560,89 +573,114 @@ void PendulumSystem::updateFaces() {
 // for a given state, evaluate f(X,t)
 
 std::vector<glm::vec3> PendulumSystem::evalF(const std::vector<glm::vec3>& state) {
-
     std::vector<glm::vec3> f;
-    
-    // TODO: implement evalF
-    // for a given state, evaluate f(X,t). Make sure this works for simplePendulum, simpleChain
-    // and simpleCloth
+    float time = glfwGetTime();
+    int clothSize;
 
-        for (unsigned int i = 0; i < m_numParticles; i++) {
-            
-            glm::vec3 pos = state[2 * i];
-            glm::vec3 vel = state[2 * i + 1];
+    std::vector<glm::vec3> positions(m_numParticles);
+    std::vector<glm::vec3> normals(m_numParticles, glm::vec3(0.0f));
 
-            f.push_back(vel);
-
-            // Gravity Force
-            glm::vec3 f_Gravity = glm::vec3(0.0f, m_gravity * m_mass, 0.0f);
-
-            // Drag Force
-            glm::vec3 f_Drag = -m_drag * vel;
-
-            // Net Force
-            glm::vec3 f_Net = f_Gravity + f_Drag;
-
-            // Spring Force
-            
-            for ( const auto& spring : springs) {
-
-                int index0 = static_cast<int>(spring[0]);
-                int index1 = static_cast<int>(spring[1]);
-
-                if (index0 == i || index1 == i) {
-
-                glm::vec3 p0 = state[2 * index0]; // particle positions
-                glm::vec3 p1 = state[2 * index1];
-
-                float restLength = spring[2];
-                float stiffness = spring[3];
-
-                glm::vec3 direction = p1 - p0;
-                float currentLength = glm::length(direction);
-
-                if (currentLength > 0){
-                    glm::vec3 springForce = -stiffness * (currentLength - restLength) * glm::normalize(direction);
-                    if (index0 == i) f_Net -= springForce;   // if wrong swap + and -
-                    if (index1 == i) f_Net += springForce;
-                }
-             }
-            }
-
-            // // Wind force (if wind is enabled and is cloth system)
-            //     if (isCloth && getWind()) {
-            //     f_Net += getWindDirection() * getWindIntensity();
-            //     }
-
-            // movement force
-            // if (isCloth && getMovement()) {
-            //     float waveSpeed = 2.0f;      // speed of wave animation
-            //     float waveHeight = 0.2f;     // maximum vertical displacement
-            //     float waveLength = 1.5f;     // horizontal scale of wave
-            //     float time = glfwGetTime();
-            
-            //     // Compute phase based on X and Z position
-            //     float phase = (pos.x + pos.z) / waveLength;
-            
-            //     // Compute target Y position using sine wave
-            //     float targetY = waveHeight * sin(waveSpeed * time + phase);
-            
-            //     // Compute difference between current Y and target Y
-            //     float diff = targetY - pos.y;
-            
-            //     // Apply vertical force toward the target height
-            //     glm::vec3 waveForce = glm::vec3(0.0f, diff * 5.0f, 0.0f);  // amplify to control stiffness
-            
-            //     if (particles[i].w != 1.0f) {  // skip fixed particles
-            //         f_Net += waveForce;
-            //     }
-            // }
-        }
-
-    return f;
-
+    for (unsigned int i = 0; i < m_numParticles; i++) {
+        positions[i] = state[2 * i];
     }
 
+    // Calculate normals for wind
+    for (const auto& face : faces) {
+        int i0 = face.x, i1 = face.y, i2 = face.z;
+        glm::vec3 v0 = positions[i0], v1 = positions[i1], v2 = positions[i2];
+        glm::vec3 edge1 = v1 - v0, edge2 = v2 - v0;
+        glm::vec3 faceNormal = glm::normalize(glm::cross(edge1, edge2));
+        normals[i0] += faceNormal;
+        normals[i1] += faceNormal;
+        normals[i2] += faceNormal;
+    }
+    for (auto& n : normals) {
+        n = glm::normalize(n);
+    }
+
+    for (unsigned int i = 0; i < m_numParticles; i++) {
+        glm::vec3 pos = state[2 * i];
+        glm::vec3 vel = state[2 * i + 1];
+        f.push_back(vel);
+
+        // GRAVITY
+        glm::vec3 f_Gravity = glm::vec3(0.0f, m_gravity * m_mass, 0.0f);
+
+        // DRAG
+        glm::vec3 f_Drag = -m_drag * vel;
+
+        // NET FORCE
+        glm::vec3 f_Net = f_Gravity + f_Drag;
+
+        // SPRING FORCES
+        for (const auto& spring : springs) {
+            int i0 = static_cast<int>(spring[0]);
+            int i1 = static_cast<int>(spring[1]);
+            if (i0 != i && i1 != i) continue;
+
+            glm::vec3 p0 = state[2 * i0];
+            glm::vec3 p1 = state[2 * i1];
+            float restLength = spring[2], stiffness = spring[3];
+
+            glm::vec3 dir = p1 - p0;
+            float len = glm::length(dir);
+
+            if (len > 0.0f) {
+                glm::vec3 springForce = -stiffness * (len - restLength) * glm::normalize(dir);
+                if (i0 == i) f_Net -= springForce;
+                if (i1 == i) f_Net += springForce;
+            }
+        }
+
+        // MOVEMENT
+        if (isCloth && sinusoidMove_ON && particles[i].w != 1.0f) {
+            float time = glfwGetTime();
+            int row = i / clothSize;
+            float frequency = 8.0f;  // wave speed
+            float amplitude = 0.8f;  // wave strength
+            float phaseShift = 0.9f;
+        
+            float wave = sin(time * frequency + row * phaseShift) * amplitude;
+            f_Net += glm::vec3(0.0f, wave, 0.0f);  // vertical wave force
+        
+            glm::vec3 breezeDirNorm = glm::normalize(windDirection);
+            float breezeStrength = windIntensity;
+            glm::vec3 breezeForce = breezeStrength * breezeDirNorm;
+            f_Net += breezeForce;
+        }
+
+        SimpleCloth* cloth = dynamic_cast<SimpleCloth*>(this);
+        if (isCloth && cloth && particles[i].w != 1.0f) {
+            float time = glfwGetTime();
+            int row = i / clothSize;
+            float frequency = 8.0f;
+            float amplitude = 0.8f;
+            float phaseShift = 0.9f;
+
+            if (cloth->getMovement()) {
+                float wave = sin(time * frequency + row * phaseShift) * amplitude;
+                f_Net += glm::vec3(0.0f, wave, 0.0f);
+            }
+
+            if (cloth->getWind()) {
+                glm::vec3 windDirNorm = glm::normalize(cloth->getWindDirection());
+                glm::vec3 windForce = cloth->getWindIntensity() * windDirNorm;
+                f_Net += windForce;
+            }
+        }
+
+
+        
+
+        if (particles[i].w == 1.0f) {
+            f.push_back(glm::vec3(0.0f));
+        } else {
+            f.push_back(f_Net / m_mass);
+        }
+    }
+
+    return f;
+}
 // NOTE: The following flags are available to integrate into your code. Feel free to use them, as they are tied into the Imgui interface.
 // We recommend you take a look at the interface so you can see what is available to you for each particle system.
 
@@ -716,7 +754,6 @@ void PendulumSystem::draw(GLuint shaderProgram) {
 
     updateSprings();
     updateWireframe();
-    setupFaces();
     updateFaces(); // optional
 
     // Use the shader program
