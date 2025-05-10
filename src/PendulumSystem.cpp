@@ -574,15 +574,10 @@ void PendulumSystem::updateFaces() {
 
 std::vector<glm::vec3> PendulumSystem::evalF(const std::vector<glm::vec3>& state) {
     std::vector<glm::vec3> f;
-    float time = glfwGetTime();
-    int clothSize;
+    int clothSize = static_cast<int>(sqrt(m_numParticles));
 
     std::vector<glm::vec3> positions(m_numParticles);
     std::vector<glm::vec3> normals(m_numParticles, glm::vec3(0.0f));
-
-    for (unsigned int i = 0; i < m_numParticles; i++) {
-        positions[i] = state[2 * i];
-    }
 
     // Calculate normals for wind
     for (const auto& face : faces) {
@@ -637,13 +632,21 @@ std::vector<glm::vec3> PendulumSystem::evalF(const std::vector<glm::vec3>& state
         if (isCloth && cloth && particles[i].w != 1.0f) {
             float time = glfwGetTime();
             int row = i / clothSize;
-            float frequency = 8.0f;
-            float amplitude = 0.8f;
-            float phaseShift = 0.9f;
+            int col = i % clothSize;
+
+            float waveFrequency = 10.0f;   
+            float waveAmplitude = 4.0f;   
+            float waveLength = 3.0f;     
+
+            float flutterFrequency = 8.0f;
+            float flutterAmplitude = 0.08f;
 
             if (cloth->getMovement()) {
-                float wave = sin(time * frequency + row * phaseShift) * amplitude;
-                f_Net += glm::vec3(0.0f, wave, 0.0f);
+                float sidewaysWave = sin(time * waveFrequency + col / waveLength + row * 0.1f) * waveAmplitude;
+                
+                float verticalFlutter = sin(time * flutterFrequency + col * 0.4f + row * 0.8f) * flutterAmplitude;
+
+                f_Net += glm::vec3(sidewaysWave, verticalFlutter, 0.0f);
             }
 
             if (cloth->getWind()) {
