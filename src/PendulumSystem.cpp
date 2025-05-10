@@ -632,23 +632,7 @@ std::vector<glm::vec3> PendulumSystem::evalF(const std::vector<glm::vec3>& state
             }
         }
 
-        // MOVEMENT
-        if (isCloth && sinusoidMove_ON && particles[i].w != 1.0f) {
-            float time = glfwGetTime();
-            int row = i / clothSize;
-            float frequency = 8.0f;  // wave speed
-            float amplitude = 0.8f;  // wave strength
-            float phaseShift = 0.9f;
-        
-            float wave = sin(time * frequency + row * phaseShift) * amplitude;
-            f_Net += glm::vec3(0.0f, wave, 0.0f);  // vertical wave force
-        
-            glm::vec3 breezeDirNorm = glm::normalize(windDirection);
-            float breezeStrength = windIntensity;
-            glm::vec3 breezeForce = breezeStrength * breezeDirNorm;
-            f_Net += breezeForce;
-        }
-
+        // wind forces
         SimpleCloth* cloth = dynamic_cast<SimpleCloth*>(this);
         if (isCloth && cloth && particles[i].w != 1.0f) {
             float time = glfwGetTime();
@@ -668,9 +652,6 @@ std::vector<glm::vec3> PendulumSystem::evalF(const std::vector<glm::vec3>& state
                 f_Net += windForce;
             }
         }
-
-
-        
 
         if (particles[i].w == 1.0f) {
             f.push_back(glm::vec3(0.0f));
